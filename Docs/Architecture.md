@@ -28,7 +28,7 @@ flowchart LR
     Character --> Unit[Unit별 Gameplay Logic]
 ```
 
-Behavior Graph는 Target 탐색과 상태 전환을 담당합니다. C# Gameplay Component는 공격, 회복, 체력과 전투 스탯을 처리합니다. `ActionAttackAction`을 두 계층의 연결 지점으로 사용했습니다.
+Behavior Graph는 Target 탐색과 상태 전환을 담당합니다. C# Gameplay Component는 공격, 회복, 체력과 전투 스탯을 처리합니다. [`ActionAttackAction`](../Source/AI/Actions/ActionAttackAction.cs#L32-L64)을 두 계층의 연결 지점으로 사용했습니다.
 
 ## 일반 전투 Unit
 
@@ -65,9 +65,9 @@ Restart when State changes
 | Unity Behavior | Find Closest With Tag | 일반 공격 Target 탐색 |
 | Unity Behavior | Navigate To Target, Look At, Wait | 이동과 방향 제어 |
 | Unity Behavior | Check Distance, Branch, Guard | 공격 범위 판단 |
-| Custom Action | `FindAllyWithLowestHealthRatioAction` | 회복 우선순위가 높은 Ally 선택 |
-| Custom Action | `ActionAttackAction` | Behavior와 Gameplay 공격 연결 |
-| Blackboard Data | `State` | Chase, Attack, Idle 상태 공유 |
+| Custom Action | [`FindAllyWithLowestHealthRatioAction`](../Source/AI/Actions/FindAllyWithLowestHealthRatio.cs#L30-L92) | 회복 우선순위가 높은 Ally 선택 |
+| Custom Action | [`ActionAttackAction`](../Source/AI/Actions/ActionAttackAction.cs#L32-L106) | Behavior와 Gameplay 공격 연결 |
+| Blackboard Data | [`State`](../Source/AI/Blackboard/State.cs#L4-L10) | Chase, Attack, Idle 상태 공유 |
 
 ## Custom Target Selection
 
@@ -93,6 +93,8 @@ flowchart TD
 | Success | 유효한 Target을 찾고 Blackboard에 기록 |
 | Failure | 조건에 맞는 후보가 없음 |
 
+→ [후보 검증부터 Target 기록까지 전체 코드 보기](../Source/AI/Actions/FindAllyWithLowestHealthRatio.cs#L39-L92)
+
 ## Multi Unit Graph 재사용
 
 ```mermaid
@@ -109,4 +111,6 @@ flowchart TD
 ```
 
 공통 Graph에는 탐색, 이동, 공격의 순서를 정의했습니다. 각 Unit의 `BehaviorGraphAgent`에는 자신을 나타내는 Self와 Unit별 Speed, AttackRange를 설정하고, 실행 중 Target과 State를 독립적으로 유지했습니다.
+
+→ [Healer의 Runtime Blackboard 변수 초기화 코드 보기](../Source/Gameplay/Units/Healer.cs#L22-L28)
 

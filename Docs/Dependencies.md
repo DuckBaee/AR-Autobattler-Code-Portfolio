@@ -16,11 +16,11 @@ flowchart TD
 
 | 코드 | 연결 대상 | 역할 |
 |---|---|---|
-| `FindAllyWithLowestHealthRatio` | Unity Behavior, `Character` | 후보 Unit의 Health와 MaxHealth를 읽어 Target 결정 |
-| `ActionAttackAction` | Unity Behavior, `Character` | Blackboard Agent/Target을 실제 공격 호출로 변환 |
-| `State` | Unity Behavior Blackboard | 거리 판단 결과와 실행 행동 공유 |
-| `Healer` | `Character`, `BehaviorGraphAgent`, Physics | Unit별 Blackboard 초기화와 범위 회복 |
-| `ARObjectPlacement` | AR Foundation, GameManager | Plane 배치 결과와 게임 진행 상태 연결 |
+| [`FindAllyWithLowestHealthRatio`](../Source/AI/Actions/FindAllyWithLowestHealthRatio.cs#L30-L92) | Unity Behavior, `Character` | 후보 Unit의 Health와 MaxHealth를 읽어 Target 결정 |
+| [`ActionAttackAction`](../Source/AI/Actions/ActionAttackAction.cs#L32-L106) | Unity Behavior, `Character` | Blackboard Agent/Target을 실제 공격 호출로 변환 |
+| [`State`](../Source/AI/Blackboard/State.cs#L4-L10) | Unity Behavior Blackboard | 거리 판단 결과와 실행 행동 공유 |
+| [`Healer`](../Source/Gameplay/Units/Healer.cs#L22-L64) | `Character`, `BehaviorGraphAgent`, Physics | Unit별 Blackboard 초기화와 범위 회복 |
+| [`ARObjectPlacement`](../Source/AR/ARObjectPlacement.cs#L32-L68) | AR Foundation, GameManager | Plane 배치 결과와 게임 진행 상태 연결 |
 
 ## Unit 데이터 흐름
 

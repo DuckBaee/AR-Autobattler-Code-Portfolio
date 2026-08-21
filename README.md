@@ -8,7 +8,7 @@ AR 공간에 배치한 전장에서 여러 Unit이 스스로 대상을 탐색하
 
 ### 게임 규칙에 맞춘 Target Selection
 
-Healer는 가장 가까운 아군보다 회복이 가장 시급한 아군을 먼저 지원해야 했습니다. 기본 제공 탐색 Node만으로는 이 우선순위를 표현하기 어려워 `FindAllyWithLowestHealthRatioAction`을 직접 구현했습니다.
+Healer는 가장 가까운 아군보다 회복이 가장 시급한 아군을 먼저 지원해야 했습니다. 기본 제공 탐색 Node만으로는 이 우선순위를 표현하기 어려워 [`FindAllyWithLowestHealthRatioAction`](Source/AI/Actions/FindAllyWithLowestHealthRatio.cs#L30-L92)을 직접 구현했습니다.
 
 ```text
 Ally 후보 탐색
@@ -21,9 +21,11 @@ Ally 후보 탐색
 
 절대 체력이 아닌 체력 비율을 사용해 최대 체력이 서로 다른 Tank, Warrior, Archer도 같은 기준으로 비교했습니다.
 
+→ [체력 비율 비교와 거리 tie-break 코드 보기](Source/AI/Actions/FindAllyWithLowestHealthRatio.cs#L65-L88)
+
 ### 판단과 실행을 분리한 전투 AI
 
-Target 탐색과 State 판단은 반복해서 실행하고, 실제 이동과 공격은 별도의 State Subtree에서 처리했습니다. State가 변경되면 실행 중인 행동을 Restart하고 새로운 행동으로 전환합니다.
+Target 탐색과 [`State`](Source/AI/Blackboard/State.cs#L4-L10) 판단은 반복해서 실행하고, 실제 이동과 공격은 별도의 State Subtree에서 처리했습니다. State가 변경되면 실행 중인 행동을 Restart하고 새로운 행동으로 전환합니다.
 
 ```mermaid
 flowchart TD
@@ -56,9 +58,11 @@ Warrior, Archer, Mage, Tank은 하나의 공통 Behavior Graph를 사용합니�
 
 Healer는 아군 지원 대상 선정이 필요하고, Enemy는 Ally 탐색과 Waypoint fallback이 필요해 각각 별도의 Graph로 구성했습니다.
 
+→ [Unit 스탯을 Runtime Blackboard에 초기화하는 코드 보기](Source/Gameplay/Units/Healer.cs#L22-L28)
+
 ### Behavior와 Gameplay 연결
 
-`ActionAttackAction`은 Blackboard에서 Agent와 Target을 받아 실제 Gameplay의 `Character.Attack(target)`을 호출합니다. Behavior Graph는 판단과 실행 순서를 담당하고, Character 계층은 Unit별 공격과 회복을 담당하도록 연결했습니다.
+[`ActionAttackAction`](Source/AI/Actions/ActionAttackAction.cs#L32-L64)은 Blackboard에서 Agent와 Target을 받아 실제 Gameplay의 `Character.Attack(target)`을 호출합니다. Behavior Graph는 판단과 실행 순서를 담당하고, Character 계층은 Unit별 공격과 회복을 담당하도록 연결했습니다.
 
 ```text
 Behavior Graph
@@ -80,15 +84,18 @@ Touch
 → 확정 후 Plane Detection 비활성화
 ```
 
+- [Plane Raycast와 Battlefield 생성 코드 보기](Source/AR/ARObjectPlacement.cs#L32-L49)
+- [배치 Confirm과 Plane Detection 종료 코드 보기](Source/AR/ARObjectPlacement.cs#L54-L60)
+
 ## 주요 코드
 
 | 코드 | 구현 내용 |
 |---|---|
-| [`FindAllyWithLowestHealthRatio.cs`](Source/AI/Actions/FindAllyWithLowestHealthRatio.cs) | 체력 비율 기반 지원 Target 선정 |
-| [`ActionAttackAction.cs`](Source/AI/Actions/ActionAttackAction.cs) | Behavior와 Gameplay 공격 연결 |
-| [`State.cs`](Source/AI/Blackboard/State.cs) | Chase, Attack, Idle 상태 정의 |
-| [`Healer.cs`](Source/Gameplay/Units/Healer.cs) | Healer의 Blackboard 초기화와 범위 회복 |
-| [`ARObjectPlacement.cs`](Source/AR/ARObjectPlacement.cs) | AR Plane 기반 Battlefield 배치 |
+| [`FindAllyWithLowestHealthRatio.cs`](Source/AI/Actions/FindAllyWithLowestHealthRatio.cs#L30-L92) | 체력 비율 기반 지원 Target 선정 |
+| [`ActionAttackAction.cs`](Source/AI/Actions/ActionAttackAction.cs#L32-L106) | Behavior와 Gameplay 공격 연결 |
+| [`State.cs`](Source/AI/Blackboard/State.cs#L4-L10) | Chase, Attack, Idle 상태 정의 |
+| [`Healer.cs`](Source/Gameplay/Units/Healer.cs#L22-L64) | Healer의 Blackboard 초기화와 범위 회복 |
+| [`ARObjectPlacement.cs`](Source/AR/ARObjectPlacement.cs#L32-L68) | AR Plane 기반 Battlefield 배치 |
 
 ## 기술 문서
 

@@ -22,7 +22,7 @@ flowchart TD
 
 ## ARObjectPlacement
 
-`ARObjectPlacement`에서 다음 흐름을 구현했습니다.
+[`ARObjectPlacement`](../Source/AR/ARObjectPlacement.cs#L24-L68)에서 다음 흐름을 구현했습니다.
 
 - 첫 번째 Touch 위치를 `TrackableType.Planes`에 Raycast
 - `ARRaycastHit.pose`의 위치와 회전으로 Battlefield 생성
@@ -30,6 +30,9 @@ flowchart TD
 - Confirm과 Cancel에 따른 배치 상태 관리
 - Confirm 이후 Plane Detection과 기존 Trackable 비활성화
 - 배치 결과를 GameManager의 다음 게임 상태로 연결
+
+- [Touch 입력과 Plane Raycast 코드 보기](../Source/AR/ARObjectPlacement.cs#L32-L49)
+- [Confirm / Cancel 처리 코드 보기](../Source/AR/ARObjectPlacement.cs#L54-L68)
 
 ## Unity 기능과 작성 코드의 역할
 
@@ -40,7 +43,7 @@ flowchart TD
 | XR Origin | Device Camera와 Trackable 좌표계 구성 |
 | ARPlaneManager | 현실 공간의 Plane 관리 |
 | ARRaycastManager | Touch 위치와 Plane의 교차점 계산 |
-| `ARObjectPlacement` | 배치 조건, Battlefield 생성, 확인·취소 흐름 처리 |
+| [`ARObjectPlacement`](../Source/AR/ARObjectPlacement.cs#L32-L68) | 배치 조건, Battlefield 생성, 확인·취소 흐름 처리 |
 
 AR 기능을 단순히 활성화하는 데 그치지 않고, Plane 탐색부터 전장 확정과 게임 상태 전환까지 하나의 플레이 흐름으로 연결했습니다.
 
