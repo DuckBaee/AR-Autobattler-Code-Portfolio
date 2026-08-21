@@ -1,23 +1,29 @@
-# AR Autobattler — AI & AR Code Portfolio
+# AR Autobattler
 
-Unity 6 기반 AR Autobattler 프로젝트에서 직접 작성한 AI 및 AR 연동 코드를 선별한 코드 리뷰용 Repository입니다.
+Unity 6와 AR Foundation으로 개발한 개인 프로젝트입니다.
 
-이 Repository의 목적은 게임을 다시 실행하거나 Unity 프로젝트를 재현하는 것이 아닙니다. 원본 프로젝트의 핵심 소스 코드를 수정 없이 보관하고, 생략된 Unity Asset과 외부 시스템의 관계를 문서로 설명합니다.
+AR 공간에 배치한 전장에서 여러 Unit이 스스로 대상을 탐색하고, 이동하고, 공격하는 Autobattler를 구현했습니다. 개발 과정에서는 Unity Behavior의 기본 노드를 단순히 조합하는 데 그치지 않고, 전투 규칙에 필요한 Target Selection을 Custom Action으로 확장하는 데 집중했습니다.
 
-## 핵심 구현
+## 구현 내용
 
-### 1. 게임 규칙 기반 Custom Target Selection
+### 게임 규칙에 맞춘 Target Selection
 
-Unity Behavior의 기본 최근접 탐색만으로는 회복이 가장 시급한 Unit을 선택할 수 없었습니다. `FindAllyWithLowestHealthRatioAction`은 후보 아군의 `Health / MaxHealth`를 비교하고, 체력 비율이 같으면 더 가까운 대상을 선택합니다.
+Healer는 가장 가까운 아군보다 회복이 가장 시급한 아군을 먼저 지원해야 했습니다. 기본 제공 탐색 Node만으로는 이 우선순위를 표현하기 어려워 `FindAllyWithLowestHealthRatioAction`을 직접 구현했습니다.
 
-- 최대 체력이 다른 Unit을 동일 기준으로 비교
-- Self 및 유효하지 않은 `Character` 제외
-- 거리 기반 tie-break
-- 선택 결과를 Blackboard Target으로 전달
+```text
+Ally 후보 탐색
+→ Self와 유효하지 않은 후보 제외
+→ Health / MaxHealth 비교
+→ 체력 비율이 가장 낮은 Unit 선택
+→ 비율이 같으면 더 가까운 Unit 선택
+→ Blackboard Target 갱신
+```
 
-### 2. Target 판단과 행동 실행 분리
+절대 체력이 아닌 체력 비율을 사용해 최대 체력이 서로 다른 Tank, Warrior, Archer도 같은 기준으로 비교했습니다.
 
-Target 탐색과 State 판단은 반복 실행하고, 실제 이동·공격은 별도의 State Subtree에서 수행하도록 구성했습니다.
+### 판단과 실행을 분리한 전투 AI
+
+Target 탐색과 State 판단은 반복해서 실행하고, 실제 이동과 공격은 별도의 State Subtree에서 처리했습니다. State가 변경되면 실행 중인 행동을 Restart하고 새로운 행동으로 전환합니다.
 
 ```mermaid
 flowchart TD
@@ -36,15 +42,35 @@ flowchart TD
     Guard --> Attack[ActionAttackAction]
 ```
 
-### 3. 동일 Graph와 Unit별 Runtime Data
+### 동일 Graph를 사용하는 여러 Unit
 
-Warrior, Archer, Mage, Tank은 같은 Behavior Graph asset을 사용합니다. 행동 구조는 공유하지만 각 `BehaviorGraphAgent`의 Runtime Blackboard에서 `Self`, `Target`, `State`, `AttackRange`, `MoveSpeed`를 독립적으로 관리합니다.
+Warrior, Archer, Mage, Tank은 하나의 공통 Behavior Graph를 사용합니다. 행동 구조는 공유하지만 각 `BehaviorGraphAgent`가 별도의 Runtime Blackboard를 가지므로 Target과 State가 서로 섞이지 않습니다.
 
-Healer와 Enemy는 서로 다른 게임 요구사항 때문에 별도 Graph를 사용합니다. 따라서 “모든 Unit이 하나의 Graph를 사용한다”가 아니라 “일반 전투 Unit 네 종류가 공통 Graph를 재사용한다”가 정확한 설명입니다.
+| 공통 행동 | Unit별 Runtime Data |
+|---|---|
+| Target 탐색 순서 | Self |
+| 거리 기반 State 전환 | Target |
+| Chase 이동 | State |
+| Attack 실행 | AttackRange |
+| Target 재탐색 | MoveSpeed |
 
-### 4. AR Battlefield Placement
+Healer는 아군 지원 대상 선정이 필요하고, Enemy는 Ally 탐색과 Waypoint fallback이 필요해 각각 별도의 Graph로 구성했습니다.
 
-AR Foundation의 Plane Raycast 결과를 게임 전장 배치 흐름에 연결했습니다.
+### Behavior와 Gameplay 연결
+
+`ActionAttackAction`은 Blackboard에서 Agent와 Target을 받아 실제 Gameplay의 `Character.Attack(target)`을 호출합니다. Behavior Graph는 판단과 실행 순서를 담당하고, Character 계층은 Unit별 공격과 회복을 담당하도록 연결했습니다.
+
+```text
+Behavior Graph
+→ Agent / Target Blackboard
+→ ActionAttackAction
+→ Character.Attack(Target)
+→ Unit별 Gameplay Logic
+```
+
+### AR Battlefield 배치
+
+AR Foundation의 Plane Raycast 결과를 이용해 현실 공간에 전장을 배치했습니다. 배치 위치를 확인하거나 취소할 수 있고, 확정한 뒤에는 Plane 탐지를 종료해 전투 관찰에 집중하도록 구성했습니다.
 
 ```text
 Touch
@@ -54,30 +80,31 @@ Touch
 → 확정 후 Plane Detection 비활성화
 ```
 
-ARCore, XR Origin, Device Camera와 Plane/Raycast Manager는 Unity 및 Google 제공 기능이며, 이 Repository의 코드는 해당 기능을 게임 배치 흐름에 연결하는 역할을 담당합니다.
+## 주요 코드
 
-## 선별 코드
-
-| 코드 | 역할 |
+| 코드 | 구현 내용 |
 |---|---|
 | [`FindAllyWithLowestHealthRatio.cs`](Source/AI/Actions/FindAllyWithLowestHealthRatio.cs) | 체력 비율 기반 지원 Target 선정 |
-| [`ActionAttackAction.cs`](Source/AI/Actions/ActionAttackAction.cs) | Blackboard Agent/Target과 Gameplay 공격 연결 |
+| [`ActionAttackAction.cs`](Source/AI/Actions/ActionAttackAction.cs) | Behavior와 Gameplay 공격 연결 |
 | [`State.cs`](Source/AI/Blackboard/State.cs) | Chase, Attack, Idle 상태 정의 |
-| [`Healer.cs`](Source/Gameplay/Units/Healer.cs) | Healer Blackboard 초기화와 범위 회복 |
+| [`Healer.cs`](Source/Gameplay/Units/Healer.cs) | Healer의 Blackboard 초기화와 범위 회복 |
 | [`ARObjectPlacement.cs`](Source/AR/ARObjectPlacement.cs) | AR Plane 기반 Battlefield 배치 |
 
-## 문서
+## 기술 문서
 
 - [AI 구조와 데이터 흐름](Docs/Architecture.md)
-- [AR 통합 경계](Docs/ARIntegration.md)
-- [외부 의존성](Docs/Dependencies.md)
-- [공개 코드의 제한사항](Docs/KnownLimitations.md)
-- [원본 경로와 동일성 기록](Docs/SourceManifest.md)
+- [AR Battlefield 배치 흐름](Docs/ARIntegration.md)
+- [코드 연결 관계](Docs/Dependencies.md)
 
-## Repository 범위
+## 기술 스택
 
-- 실행 가능한 Unity 프로젝트가 아닙니다.
-- Scene, Prefab, Behavior Graph asset, `.meta`, Package 설정은 포함하지 않습니다.
-- 누락된 시스템을 대체하기 위한 Stub, Mock 또는 재구현 코드는 포함하지 않습니다.
-- `Source/`의 C# 파일은 원본 프로젝트에서 내용 변경 없이 복사했습니다.
+- Unity 6
+- C#
+- Unity Behavior
+- AI Navigation / NavMesh
+- AR Foundation
+- ARCore
+- XR Origin
+
+`Source/`에는 제가 직접 작성한 코드 중 AI 확장과 AR 연동을 설명하는 핵심 파일을 선별해 담았습니다.
 
